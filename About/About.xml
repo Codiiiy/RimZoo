@@ -1,0 +1,9 @@
+<ModMetaData>
+	<name>RimZoo</name>
+	<description>This mod adds commercial options to increase wealth via zoos.</description>
+	<author>Codiiiy</author>
+	<supportedVersions>
+		<li>1.5</li>
+	</supportedVersions>
+	<packageId>Codiiiy.RimZoos.Main</packageId>
+</ModMetaData>

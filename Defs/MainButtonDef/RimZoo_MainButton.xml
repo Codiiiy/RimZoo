@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+    <MainButtonDef>
+        <defName>RimZoo</defName>
+        <label>Zoo</label>
+        <description>Manage your zoo venture.</description>
+        <order>35</order>
+        <tabWindowClass>RimZoo.TabWindow_RimZoo</tabWindowClass>
+    </MainButtonDef>
+</Defs>
