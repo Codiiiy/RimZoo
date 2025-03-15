@@ -1,0 +1,8 @@
+<Defs>
+	<JobDef>
+		<defName>VisitExhibit</defName>
+		<driverClass>RimZoo.JobDriver_VisitExhibit</driverClass>
+		<reportString>is visiting the exhibit.</reportString>
+		<playerInterruptible>true</playerInterruptible>
+	</JobDef>
+</Defs>

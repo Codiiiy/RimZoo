@@ -1,0 +1,11 @@
+<Defs>
+	<IncidentDef>
+		<defName>ZooGuestsArrive</defName>
+		<workerClass>RimZoo.IncidentWorker_ZooGuestsArrive</workerClass>
+		<category>Misc</category>
+		<baseChance>0</baseChance>
+		    <targetTags>
+				<li>Map_PlayerHome</li>
+			</targetTags> 
+	</IncidentDef>
+</Defs>
