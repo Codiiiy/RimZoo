@@ -1,0 +1,37 @@
+# Ignore Visual Studio build artifacts
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Ignore Rider/JetBrains IDE files
+.idea/
+
+# Ignore temporary or backup files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Ignore system files
+Thumbs.db
+.DS_Store
+
+# Allow all RimWorld mod folders
+!About/
+!Defs/
+!Assemblies/
+!Textures/
+!Sounds/
+!Languages/
+!Patches/
+!Source/
+
+# Allow all source code and project files
+!Source/*.cs
+!Source/*.csproj
+!Source/*.sln
+
+# Ignore DLLs in source (but allow them in Assemblies/)
+Source/*.dll
