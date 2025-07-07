@@ -52,12 +52,11 @@
 			</damageData>
 		</graphicData>
 		<comps>
-			<li Class="Rimzoo.CompProperties_ExhibitMarker"/>
+			<li Class="RimZoo.CompProperties_ExhibitMarker"/>
 		</comps>
 		<inspectorTabs>
 			<li>ITab_PenAutoCut</li>
 			<li>ITab_PenFood</li>
-			<li>ITab_PenAnimals</li>
 		</inspectorTabs>
 		<drawPlaceWorkersWhileSelected>true</drawPlaceWorkersWhileSelected>
 		<placeWorkers>
