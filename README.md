@@ -10,4 +10,4 @@ RimZoo — A RimWorld Mod by Codiiiy
   - Health and happiness
   - Exhibit size
 - Track animal stats and guest satisfaction with a custom Zoo UI tab
-- Modular design with multi-version support (RimWorld 1.4, 1.5, etc.)
+
