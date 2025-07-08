@@ -11,6 +11,7 @@ namespace RimZoo
         private bool dragging = false;
         private bool dragSetTo = false;
         private int? dragStartIndex = null;
+        private Vector2 scrollPosition = Vector2.zero;
 
         public Dialog_RimZoo()
         {
@@ -87,19 +88,32 @@ namespace RimZoo
 
             y += 50f;
 
+            float scrollViewHeight = inRect.height - y - 20f;
+            Rect scrollViewRect = new Rect(10, y, inRect.width - 20, scrollViewHeight);
+
+            int itemCount = RimZoo_Logic.FindAllPens().Count;
+            float contentHeight = itemCount * 35f;
+
+            Rect contentRect = new Rect(0, 0, scrollViewRect.width - 16, contentHeight);
+
+            Widgets.BeginScrollView(scrollViewRect, ref scrollPosition, contentRect);
+
+            float itemY = 0f;
             foreach (var pen in RimZoo_Logic.FindAllPens())
             {
                 string exhibitName = pen.selectedAnimal?.defName ?? "No animal assigned";
                 string exhibitInfo = $"Species: {exhibitName}, Happiness: {pen.Happiness:F2}, Rarity: {pen.Rarity:F2}";
-                Rect exhibitRect = new Rect(10, y, inRect.width - 20, 30);
+                Rect exhibitRect = new Rect(0, itemY, contentRect.width, 30);
                 Widgets.DrawMenuSection(exhibitRect);
                 if (Widgets.ButtonInvisible(exhibitRect))
                 {
                     JumpToExhibit(pen);
                 }
                 Widgets.Label(new Rect(exhibitRect.x + 5, exhibitRect.y + 5, exhibitRect.width - 10, exhibitRect.height - 10), exhibitInfo);
-                y += exhibitRect.height + 5;
+                itemY += 35f;
             }
+
+            Widgets.EndScrollView();
         }
 
         private void JumpToExhibit(CompExhibitMarker pen)

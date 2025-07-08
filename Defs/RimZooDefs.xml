@@ -41,7 +41,7 @@
 			<paintable>true</paintable>
 		</building>
 		<graphicData>
-			<texPath>Building/ExhibitMarker</texPath>
+			<texPath>RimZoo/Building/ExhibitMarker</texPath>
 			<graphicClass>Graphic_Single</graphicClass>
 			<shadowData>
 				<volume>(0.2, 0.5, 0.2)</volume>
@@ -57,7 +57,6 @@
 		<inspectorTabs>
 			<li>ITab_PenAutoCut</li>
 			<li>ITab_PenFood</li>
-			<li>ITab_PenAnimals</li>
 		</inspectorTabs>
 		<drawPlaceWorkersWhileSelected>true</drawPlaceWorkersWhileSelected>
 		<placeWorkers>

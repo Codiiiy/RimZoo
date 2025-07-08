@@ -10,7 +10,7 @@ namespace RimZoo
 
         static RimZoo_Textures()
         {
-            ExhibitToggleIcon = ContentFinder<Texture2D>.Get("UI/Icons/ExhibitToggle", true);
+            ExhibitToggleIcon = ContentFinder<Texture2D>.Get("RimZoo/UI/Icons/ExhibitToggle", true);
         }
     }
 }
