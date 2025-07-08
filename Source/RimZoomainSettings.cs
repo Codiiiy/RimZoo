@@ -3,6 +3,7 @@ using Verse;
 
 namespace RimZoo
 {
+
     public class RimZooMainSettings : ModSettings
     {
         public float priceMultiplier = 1.0f;

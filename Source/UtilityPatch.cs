@@ -9,6 +9,7 @@ using Verse;
 
 namespace RimZoo
 {
+
     [HarmonyPatch(typeof(AnimalPenUtility), "IsRopeManagedAnimalDef")]
     public static class Patch_IsRopeManagedAnimalDef
     {
@@ -20,6 +21,26 @@ namespace RimZoo
                 return false;
             }
             return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(MainTabWindow_Animals), "DoWindowContents")]
+    public static class MainTabWindow_Animals_DoWindowContents_Patch
+    {
+        public static void Postfix(Rect rect)
+        {
+            float buttonWidth = Mathf.Min(rect.width, 260f);
+            float buttonHeight = 32f;
+            float x = rect.x + buttonWidth + 200f;
+            float y = rect.y;
+            Rect rimZooRect = new Rect(x, y, buttonWidth, buttonHeight);
+            if (Widgets.ButtonText(rimZooRect, "Manage RimZoo"))
+            {
+                if (!Find.WindowStack.IsOpen<Dialog_RimZoo>())
+                {
+                    Find.WindowStack.Add(new Dialog_RimZoo());
+                }
+            }
         }
     }
 
@@ -229,6 +250,33 @@ namespace RimZoo
                 return false;
             }
         }
+        [HarmonyPatch(typeof(AnimalPenUtility), nameof(AnimalPenUtility.GetCurrentPenOf))]
+        public static class Patch_AnimalPenUtility_GetCurrentPenOf
+        {
+            static void Postfix(Pawn animal, bool allowUnenclosedPens, ref CompAnimalPenMarker __result)
+            {
+                if (__result != null) return;
+
+                foreach (Map map in Find.Maps)
+                {
+                    foreach (Thing thing in map.listerThings.AllThings)
+                    {
+                        if (thing.TryGetComp<CompExhibitMarker>() is CompExhibitMarker exhibit)
+                        {
+                            var exhibitMap = exhibit.parent?.Map;
+                            if (exhibitMap != null && exhibit.selectedAnimal == animal.def)
+                            {
+                                __result = exhibit;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+
 
         [HarmonyPatch(typeof(PawnColumnWorker_AllowedArea), "DoCell")]
         public static class Patch_DoCell_ExhibitCheck

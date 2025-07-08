@@ -1,11 +1,13 @@
 <ModMetaData>
-	<name>RimZoo</name>
-	<description>
-		Adds a zoo system where animals are placed in exhibits to attract paying guests. Earn silver based on animal happiness, exhibit quality, and rarity. Manage your zoo for maximum profit!
-	</description>
-	<author>Codiiiy</author>
-	<supportedVersions>
-		<li>1.5</li>
-	</supportedVersions>
-	<packageId>Codiiiy.RimZoos.Main</packageId>
+  <name>RimZoo</name>
+  <modVersion>1.0.0</modVersion>
+  <description>
+Adds a zoo system where animals are placed in exhibits to attract paying guests. 
+Earn silver based on animal happiness, exhibit quality, and rarity. Manage your zoo for maximum profit!
+  </description>
+  <author>Codiiiy</author>
+  <supportedVersions>
+    <li>1.5</li>
+  </supportedVersions>
+  <packageId>Codiiiy.RimZoos.Main</packageId>
 </ModMetaData>
