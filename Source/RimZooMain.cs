@@ -4,6 +4,7 @@ using Verse;
 
 namespace RimZoo
 {
+
     public class RimZooMain : Mod
     {
         public static RimZooMainSettings settings;

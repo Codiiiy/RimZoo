@@ -23,6 +23,7 @@ namespace RimZoo
                 return field?.GetValue(this) as PenFoodCalculator;
             }
         }
+
         public List<Pawn> AssignedPawns
         {
             get
@@ -40,7 +41,6 @@ namespace RimZoo
                                          .Where(p => p.def == selectedAnimal);
                     pawns.AddRange(cellPawns);
                 }
-
                 return pawns;
             }
         }
@@ -190,7 +190,7 @@ namespace RimZoo
             yield return new Command_Action
             {
                 defaultLabel = "Select Animal",
-                icon = ContentFinder<Texture2D>.Get("UI/Icons/ExhibitToggle", true),
+                icon = RimZoo_Textures.ExhibitToggleIcon,
                 action = OpenSpeciesSelectionMenu
             };
             ToggleSelectAnimal(selectedAnimal);
