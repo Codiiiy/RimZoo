@@ -9,6 +9,7 @@ using Verse;
 
 namespace RimZoo
 {
+
     [HarmonyPatch(typeof(AnimalPenUtility), "IsRopeManagedAnimalDef")]
     public static class Patch_IsRopeManagedAnimalDef
     {
@@ -20,6 +21,26 @@ namespace RimZoo
                 return false;
             }
             return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(MainTabWindow_Animals), "DoWindowContents")]
+    public static class MainTabWindow_Animals_DoWindowContents_Patch
+    {
+        public static void Postfix(Rect rect)
+        {
+            float buttonWidth = Mathf.Min(rect.width, 260f);
+            float buttonHeight = 32f;
+            float x = rect.x + buttonWidth + 200f;
+            float y = rect.y;
+            Rect rimZooRect = new Rect(x, y, buttonWidth, buttonHeight);
+            if (Widgets.ButtonText(rimZooRect, "Manage RimZoo"))
+            {
+                if (!Find.WindowStack.IsOpen<Dialog_RimZoo>())
+                {
+                    Find.WindowStack.Add(new Dialog_RimZoo());
+                }
+            }
         }
     }
 
@@ -96,21 +117,23 @@ namespace RimZoo
             }
         }
     }
+
     [HarmonyPatch(typeof(Thing), "BlocksPawn")]
     public static class Patch_BlocksPawn
     {
         static void Postfix(Thing __instance, Pawn p, ref bool __result)
         {
-
             if (p?.CurJob != null && p.CurJob.def.defName.ToLowerInvariant().Contains("rope"))
             {
                 return;
             }
-
+            if (__instance.def?.defName == "AnimalFlap" && p.RaceProps?.Animal == true)
+            {
+                __result = false;
+                return;
+            }
             if (__result) return;
             if (p == null || __instance == null) return;
-
-
             if (__instance is Building_Door door)
             {
                 if (!door.Open)
@@ -118,6 +141,7 @@ namespace RimZoo
                     __result = true;
                     return;
                 }
+
             }
 
             CompExhibitMarker comp = __instance.TryGetComp<CompExhibitMarker>();
@@ -126,7 +150,6 @@ namespace RimZoo
                 __result = true;
                 return;
             }
-
 
             Map map = __instance.Map;
             if (map != null)
@@ -143,152 +166,183 @@ namespace RimZoo
                     }
                 }
             }
-
         }
-        [HarmonyPatch(typeof(Building_Door), "PawnCanOpen")]
-        public static class Patch_PawnCanOpen
+    }
+
+
+    [HarmonyPatch(typeof(Building_Door), "PawnCanOpen")]
+    public static class Patch_PawnCanOpen
+    {
+        static void Postfix(Building_Door __instance, Pawn p, ref bool __result)
         {
-            static void Postfix(Building_Door __instance, Pawn p, ref bool __result)
+            if (p == null || __instance == null)
             {
-                if (p == null || __instance == null)
-                {
-                    return;
-                }
+                return;
+            }
+            if (__instance.def?.defName == "AnimalFlap" && p.RaceProps?.Animal == true)
+            {
+                __result = true; // Allow animals to open animal flaps
+                return;
+            }
+            if (p?.CurJob != null && p.CurJob.def.defName.ToLowerInvariant().Contains("rope"))
+            {
+                return;
+            }
 
-                if (p?.CurJob != null && p.CurJob.def.defName.ToLowerInvariant().Contains("rope"))
-                {
-                    return;
-                }
 
-
-                Map map = __instance.Map;
-                if (map != null)
+            Map map = __instance.Map;
+            if (map != null)
+            {
+                foreach (Building building in map.listerBuildings.allBuildingsColonist)
                 {
-                    foreach (Building building in map.listerBuildings.allBuildingsColonist)
+                    CompExhibitMarker markerComp = building.TryGetComp<CompExhibitMarker>();
+                    if (markerComp != null && markerComp.selectedAnimal == p.def)
                     {
-                        CompExhibitMarker markerComp = building.TryGetComp<CompExhibitMarker>();
-                        if (markerComp != null && markerComp.selectedAnimal == p.def)
+                        __result = false;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    [HarmonyPatch(typeof(AnimalPenGUI), nameof(AnimalPenGUI.DoAllowedAreaMessage))]
+    public static class Patch_AnimalPenGUI_DoAllowedAreaMessage
+    {
+        static bool Prefix(Rect rect, Pawn pawn)
+        {
+            var currentPen = AnimalPenUtility.GetCurrentPenOf(pawn, allowUnenclosedPens: false);
+
+            // Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn: {pawn.LabelShort}, Pen: {(currentPen?.label ?? "null")}, Type: {(currentPen?.GetType().Name ?? "null")}");
+
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Tiny;
+
+            string label = "(Unpenned)";
+            string tooltip = "This animal is not inside any pen.";
+
+            if (currentPen != null)
+            {
+                if (currentPen is CompExhibitMarker)
+                {
+                    //Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is in an Exhibit.");
+                    label = "In Exhibit: " + currentPen.label;
+                    tooltip = label;
+                }
+                else
+                {
+                    // Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is in a regular Pen.");
+                    label = "In Pen: " + currentPen.label;
+                    tooltip = label;
+                }
+            }
+            else if (AnimalPenUtility.NeedsToBeManagedByRope(pawn))
+            {
+                // Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} needs to be roped.");
+                label = "Needs to be roped to a pen";
+                tooltip = label;
+            }
+            else if (pawn.RaceProps.Dryad)
+            {
+                //Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is a Dryad.");
+                label = "Cannot assign allowed area to dryad";
+                tooltip = label;
+            }
+
+            GUI.color = Color.gray;
+            Widgets.Label(rect, label);
+            TooltipHandler.TipRegion(rect, tooltip);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            return false;
+        }
+    }
+    [HarmonyPatch(typeof(AnimalPenUtility), nameof(AnimalPenUtility.GetCurrentPenOf))]
+    public static class Patch_AnimalPenUtility_GetCurrentPenOf
+    {
+        static void Postfix(Pawn animal, bool allowUnenclosedPens, ref CompAnimalPenMarker __result)
+        {
+            if (__result != null) return;
+
+            foreach (Map map in Find.Maps)
+            {
+                foreach (Thing thing in map.listerThings.AllThings)
+                {
+                    if (thing.TryGetComp<CompExhibitMarker>() is CompExhibitMarker exhibit)
+                    {
+                        var exhibitMap = exhibit.parent?.Map;
+                        if (exhibitMap != null && exhibit.selectedAnimal == animal.def)
                         {
-                            __result = false;
+                            __result = exhibit;
                             return;
                         }
                     }
                 }
             }
         }
-        [HarmonyPatch(typeof(AnimalPenGUI), nameof(AnimalPenGUI.DoAllowedAreaMessage))]
-        public static class Patch_AnimalPenGUI_DoAllowedAreaMessage
+
+    }
+
+
+
+    [HarmonyPatch(typeof(PawnColumnWorker_AllowedArea), "DoCell")]
+    public static class Patch_DoCell_ExhibitCheck
+    {
+        static bool Prefix(Rect rect, Pawn pawn, PawnTable table)
         {
-            static bool Prefix(Rect rect, Pawn pawn)
+            var currentPen = AnimalPenUtility.GetCurrentPenOf(pawn, allowUnenclosedPens: false);
+
+            //Log.Warning($"[ZooMod][DoCell] Pawn: {pawn.LabelShort}, Pen: {(currentPen?.label ?? "null")}, Type: {(currentPen?.GetType().Name ?? "null")}");
+
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Tiny;
+
+            string label = "(Unpenned)";
+            string tooltip = "This animal is not inside any pen.";
+
+            if (currentPen != null)
             {
-                var currentPen = AnimalPenUtility.GetCurrentPenOf(pawn, allowUnenclosedPens: false);
-
-                Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn: {pawn.LabelShort}, Pen: {(currentPen?.label ?? "null")}, Type: {(currentPen?.GetType().Name ?? "null")}");
-
-                Text.Anchor = TextAnchor.MiddleCenter;
-                Text.Font = GameFont.Tiny;
-
-                string label = "(Unpenned)";
-                string tooltip = "This animal is not inside any pen.";
-
-                if (currentPen != null)
+                if (currentPen is CompExhibitMarker)
                 {
-                    if (currentPen is CompExhibitMarker)
-                    {
-                        Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is in an Exhibit.");
-                        label = "In Exhibit: " + currentPen.label;
-                        tooltip = label;
-                    }
-                    else
-                    {
-                        Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is in a regular Pen.");
-                        label = "In Pen: " + currentPen.label;
-                        tooltip = label;
-                    }
-                }
-                else if (AnimalPenUtility.NeedsToBeManagedByRope(pawn))
-                {
-                    Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} needs to be roped.");
-                    label = "Needs to be roped to a pen";
+                    //Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} is in an Exhibit.");
+                    label = "In Exhibit: " + currentPen.label;
                     tooltip = label;
                 }
-                else if (pawn.RaceProps.Dryad)
+                else
                 {
-                    Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is a Dryad.");
-                    label = "Cannot assign allowed area to dryad";
+                    // Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} is in a regular Pen.");
+                    label = "In Pen: " + currentPen.label;
                     tooltip = label;
                 }
-
-                GUI.color = Color.gray;
-                Widgets.Label(rect, label);
-                TooltipHandler.TipRegion(rect, tooltip);
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                Text.Anchor = TextAnchor.UpperLeft;
-
+            }
+            else if (pawn.playerSettings != null && pawn.playerSettings.SupportsAllowedAreas)
+            {
+                // Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} supports allowed areas, showing selectors.");
+                AreaAllowedGUI.DoAllowedAreaSelectors(rect, pawn);
                 return false;
             }
-        }
-
-        [HarmonyPatch(typeof(PawnColumnWorker_AllowedArea), "DoCell")]
-        public static class Patch_DoCell_ExhibitCheck
-        {
-            static bool Prefix(Rect rect, Pawn pawn, PawnTable table)
+            else if (AnimalPenUtility.NeedsToBeManagedByRope(pawn))
             {
-                var currentPen = AnimalPenUtility.GetCurrentPenOf(pawn, allowUnenclosedPens: false);
-
-                Log.Warning($"[ZooMod][DoCell] Pawn: {pawn.LabelShort}, Pen: {(currentPen?.label ?? "null")}, Type: {(currentPen?.GetType().Name ?? "null")}");
-
-                Text.Anchor = TextAnchor.MiddleCenter;
-                Text.Font = GameFont.Tiny;
-
-                string label = "(Unpenned)";
-                string tooltip = "This animal is not inside any pen.";
-
-                if (currentPen != null)
-                {
-                    if (currentPen is CompExhibitMarker)
-                    {
-                        Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} is in an Exhibit.");
-                        label = "In Exhibit: " + currentPen.label;
-                        tooltip = label;
-                    }
-                    else
-                    {
-                        Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} is in a regular Pen.");
-                        label = "In Pen: " + currentPen.label;
-                        tooltip = label;
-                    }
-                }
-                else if (pawn.playerSettings != null && pawn.playerSettings.SupportsAllowedAreas)
-                {
-                    Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} supports allowed areas, showing selectors.");
-                    AreaAllowedGUI.DoAllowedAreaSelectors(rect, pawn);
-                    return false;
-                }
-                else if (AnimalPenUtility.NeedsToBeManagedByRope(pawn))
-                {
-                    Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} needs to be roped.");
-                    label = "Needs to be roped to a pen";
-                    tooltip = label;
-                }
-                else if (pawn.RaceProps.Dryad)
-                {
-                    Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} is a Dryad.");
-                    label = "Cannot assign allowed area to dryad";
-                    tooltip = label;
-                }
-
-                GUI.color = Color.gray;
-                Widgets.Label(rect, label);
-                TooltipHandler.TipRegion(rect, tooltip);
-                GUI.color = Color.white;
-                Text.Font = GameFont.Small;
-                Text.Anchor = TextAnchor.UpperLeft;
-
-                return false;
+                // Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} needs to be roped.");
+                label = "Needs to be roped to a pen";
+                tooltip = label;
             }
-        }
+            else if (pawn.RaceProps.Dryad)
+            {
+                // Log.Warning($"[ZooMod][DoCell] Pawn {pawn.LabelShort} is a Dryad.");
+                label = "Cannot assign allowed area to dryad";
+                tooltip = label;
+            }
 
+            GUI.color = Color.gray;
+            Widgets.Label(rect, label);
+            TooltipHandler.TipRegion(rect, tooltip);
+            GUI.color = Color.white;
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            return false;
+        }
     }
 }

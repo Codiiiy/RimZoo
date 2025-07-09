@@ -4,7 +4,6 @@ using Verse;
 
 namespace RimZoo
 {
-    [StaticConstructorOnStartup]
     public static class DebugActionsRimZoo
     {
         [DebugAction("RimZoo", "Trigger Zoo Guests", actionType = DebugActionType.Action)]

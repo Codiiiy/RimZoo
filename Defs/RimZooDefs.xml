@@ -41,7 +41,7 @@
 			<paintable>true</paintable>
 		</building>
 		<graphicData>
-			<texPath>Things/Building/Furniture/PenMarker</texPath>
+			<texPath>RimZoo/Building/ExhibitMarker</texPath>
 			<graphicClass>Graphic_Single</graphicClass>
 			<shadowData>
 				<volume>(0.2, 0.5, 0.2)</volume>

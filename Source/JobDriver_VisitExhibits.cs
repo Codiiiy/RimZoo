@@ -11,18 +11,28 @@ namespace RimZoo
 
         protected override IEnumerable<Toil> MakeNewToils()
         {
-            if (job.targetQueueA == null || job.targetQueueA.Count == 0)
-                yield break;
+            this.FailOnDestroyedOrNull(TargetIndex.A);
+            this.FailOn(() => job.targetQueueA == null || job.targetQueueA.Count == 0);
 
-            foreach (LocalTargetInfo target in job.targetQueueA)
+            yield return Toils_JobTransforms.ExtractNextTargetFromQueue(TargetIndex.A);
+
+            Toil gotoExhibit = Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
+            yield return gotoExhibit;
+
+            Toil wait = Toils_General.Wait(Rand.Range(360, 2160));
+            wait.WithProgressBarToilDelay(TargetIndex.A);
+            yield return wait;
+
+            Toil checkNext = new Toil();
+            checkNext.initAction = () =>
             {
-                Toil gotoExhibit = Toils_Goto.GotoCell(target.Cell, PathEndMode.OnCell);
-                yield return gotoExhibit;
-
-                Toil wait = Toils_General.Wait(Rand.Range(360, 2160));
-                wait.WithProgressBarToilDelay(TargetIndex.A);
-                yield return wait;
-            }
+                if (job.targetQueueA != null && job.targetQueueA.Count > 0)
+                {
+                    ReadyForNextToil();
+                    JumpToToil(gotoExhibit);
+                }
+            };
+            yield return checkNext;
 
             Toil dropSilver = Toils_General.Do(() =>
             {
