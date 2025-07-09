@@ -18,9 +18,9 @@ Thumbs.db
 !Patches/
 !Source/
 Source/*.dll
-Assembelies/*
+Assemblies/*
 # But keep Rimzoo.dll
-!Assembelies/Rimzoo.dll
+!Assemblies/Rimzoo.dll
 !Source/*.cs
 !Source/*.csproj
 !Source/*.sln
