@@ -136,7 +136,7 @@ namespace RimZoo
             if (p == null || __instance == null) return;
             if (__instance is Building_Door door)
             {
-                if (!door.Open )
+                if (!door.Open)
                 {
                     __result = true;
                     return;
