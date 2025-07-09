@@ -154,11 +154,6 @@ namespace RimZoo
 
 
         }
-
-        public override void PostDeSpawn(Map map)
-        {
-            base.PostDeSpawn(map);
-        }
         public override string CompInspectStringExtra()
         {
             StringBuilder sb = new StringBuilder(base.CompInspectStringExtra());

@@ -21,12 +21,14 @@ Thumbs.db
 # Allow all RimWorld mod folders
 !About/
 !Defs/
-!Assemblies/
+
 !Textures/
 !Sounds/
 !Languages/
 !Patches/
 !Source/
+/Assembelies/*
+!/Assembelies/Rimzoo.dll
 
 # Allow all source code and project files
 !Source/*.cs
