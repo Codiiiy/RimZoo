@@ -51,8 +51,9 @@
     <Reference Include="UnityEngine">
       <HintPath>X:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>X:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>X:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
@@ -67,7 +68,6 @@
   <ItemGroup>
     <Compile Include="CompExhibitMarker.cs" />
     <Compile Include="CompProperties_ExhibitMarker.cs" />
-    <Compile Include="DebugmenuPatch.cs" />
     <Compile Include="EventHandler.cs" />
     <Compile Include="IncidentWorker_ZooGuestsArrive.cs" />
     <Compile Include="JobDriver_VisitExhibits.cs" />

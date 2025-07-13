@@ -6,13 +6,13 @@ namespace RimZoo
 {
     public static class DebugActionsRimZoo
     {
-        [DebugAction("RimZoo", "Trigger Zoo Guests", actionType = DebugActionType.Action)]
+        [DebugAction(category: "RimZoo", name: "Trigger Zoo Guests", allowedGameStates = AllowedGameStates.Playing)]
         private static void TriggerZooGuestArrival()
         {
             Map map = Find.CurrentMap;
             if (map == null)
             {
-                Log.Warning("No active map found.");
+                Log.Warning("[RimZoo] No active map found.");
                 return;
             }
 
@@ -20,17 +20,23 @@ namespace RimZoo
             if (incidentDef != null)
             {
                 IncidentParms parms = new IncidentParms { target = map };
-                incidentDef.Worker.TryExecute(parms);
-                Log.Message("Zoo Guests Arrival triggered via Debug Menu.");
-                /*for (int i = 0; i < RimZoo_Logic.openHours.Length; i++)
-                {
-                    Log.Message($"Bool[{i}] = {RimZoo_Logic.openHours[i]}");
-                }*/
+                Log.Message($"[RimZoo] Triggering ZooGuestsArrive incident on map: {map} with parms target={parms.target}");
 
+                bool success = incidentDef.Worker.TryExecute(parms);
+                Log.Message($"[RimZoo] ZooGuestsArrive incident executed: {success}");
+
+                if (success)
+                {
+                    Log.Message("Zoo Guests Arrival triggered via Debug Menu.");
+                }
+                else
+                {
+                    Log.Warning("[RimZoo] ZooGuestsArrive incident failed to execute.");
+                }
             }
             else
             {
-                Log.Warning("ZooGuestsArrive IncidentDef not found.");
+                Log.Warning("[RimZoo] ZooGuestsArrive IncidentDef not found.");
             }
         }
         [DebugAction("RimZoo", "Trigger Maddened", actionType = DebugActionType.Action)]

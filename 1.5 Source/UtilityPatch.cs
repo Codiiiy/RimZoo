@@ -258,6 +258,7 @@ namespace RimZoo
             return false;
         }
     }
+
     [HarmonyPatch(typeof(AnimalPenUtility), nameof(AnimalPenUtility.GetCurrentPenOf))]
     public static class Patch_AnimalPenUtility_GetCurrentPenOf
     {
@@ -267,12 +268,20 @@ namespace RimZoo
 
             foreach (Map map in Find.Maps)
             {
+                if (animal.Map != map) continue;
+
                 foreach (Thing thing in map.listerThings.AllThings)
                 {
                     if (thing.TryGetComp<CompExhibitMarker>() is CompExhibitMarker exhibit)
                     {
-                        var exhibitMap = exhibit.parent?.Map;
-                        if (exhibitMap != null && exhibit.selectedAnimal == animal.def)
+                        if (exhibit.selectedAnimal != animal.def)
+                            continue;
+
+                        var penCells = exhibit.GetAutoCutCells();
+                        if (penCells == null)
+                            continue;
+
+                        if (penCells.Contains(animal.Position))
                         {
                             __result = exhibit;
                             return;
@@ -281,8 +290,9 @@ namespace RimZoo
                 }
             }
         }
-
     }
+
+
 
 
 

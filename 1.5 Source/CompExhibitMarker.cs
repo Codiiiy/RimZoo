@@ -189,15 +189,6 @@ namespace RimZoo
                 action = OpenSpeciesSelectionMenu
             };
             ToggleSelectAnimal(selectedAnimal);
-
-            if (DebugSettings.godMode)
-            {
-                yield return new Command_Action
-                {
-                    defaultLabel = "Highlight Exhibit Area",
-                    action = HighlightValidFenceSpots
-                };
-            }
         }
 
         public void ToggleSelectAnimal(ThingDef newAnimal)
