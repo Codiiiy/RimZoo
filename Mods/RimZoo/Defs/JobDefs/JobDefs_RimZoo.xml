@@ -1,8 +1,0 @@
-<Defs>
-	<JobDef>
-		<defName>VisitExhibitMarker</defName>
-		<driverClass>RimZoo.JobDriver_VisitExhibits</driverClass>
-		<checkOverrideOnDamage>Always</checkOverrideOnDamage>
-		<reportString>Visitng.</reportString>
-	</JobDef>
-</Defs>
