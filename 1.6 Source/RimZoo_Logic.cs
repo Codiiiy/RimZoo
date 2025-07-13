@@ -63,10 +63,12 @@ namespace RimZoo
             Rating = Variety * total_Rarity * global_Happiness;
 
 
-            scaled_Rating = Mathf.Clamp((Rating / 20000f) * 4.9f + 0.1f, 0.1f, 5f);
+            scaled_Rating = Mathf.Clamp((Rating / 20000f) * 4.9f + 0.1f, 0.5f, 5f);
 
 
-            Price = (int)((scaled_Rating - 0.1f) / (5 - 0.1f) * (RimZooMain.settings?.priceMultiplier ?? 1));
+            float maxPrice = 100f * (RimZooMain.settings?.priceMultiplier ?? 1);
+            Price = Mathf.Clamp((int)(scaled_Rating / 5f * maxPrice), 1, (int)maxPrice);
+
 
         }
 
@@ -89,6 +91,7 @@ namespace RimZoo
             public static HashSet<Pawn> ExhibitAnimals = new HashSet<Pawn>();
             [System.ThreadStatic]
             public static Pawn CurrentPawn;
+
         }
 
         public static List<IntVec3> AllAutoCutCells

@@ -97,9 +97,10 @@ namespace RimZoo
     [HarmonyPatch(typeof(CompAnimalPenMarker), "PostSpawnSetup")]
     public static class Patch_CompPenAnimalMarker_PostSpawnSetup
     {
-        static void Postfix(CompAnimalPenMarker __instance)
+        static void Postfix(CompAnimalPenMarker __instance, bool respawningAfterLoad)
         {
             if (__instance.AnimalFilter == null) return;
+            if (respawningAfterLoad) return; 
 
             var allowedDefs = DefDatabase<ThingDef>.AllDefsListForReading
                 .Where(def =>
@@ -117,31 +118,60 @@ namespace RimZoo
             }
         }
     }
+    [HarmonyPatch(typeof(AnimalPenUtility), nameof(AnimalPenUtility.NeedsToBeManagedByRope))]
+    public static class Patch_AnimalPenUtility_NeedsToBeManagedByRope
+    {
+        static bool Prefix(Pawn pawn, ref bool __result)
+        {
+            if (pawn?.RaceProps?.Animal != true)
+                return true;
+
+            bool isZooAnimal = pawn.GetComp<PawnComp_IsZooPawn>()?.isZooPawn == true;
+
+            if (!pawn.RaceProps.FenceBlocked && !isZooAnimal)
+            {
+                __result = false;
+                return false;
+            }
+
+            return true;
+        }
+    }
+
 
     [HarmonyPatch(typeof(Thing), "BlocksPawn")]
     public static class Patch_BlocksPawn
     {
         static void Postfix(Thing __instance, Pawn p, ref bool __result)
         {
-            if (p?.CurJob != null && p.CurJob.def.defName.ToLowerInvariant().Contains("rope"))
+            if (!Utilities.IsZooAnimal(p))
+                return;
+
+            if (p?.CurJob != null && p.CurJob.def.defName.IndexOf("rope", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return;
+
+            if (__instance == null || p == null)
+                return;
+
+            if (__instance is Building_Bed bed && !bed.def.building.bed_humanlike && p.RaceProps?.Animal == true)
             {
+                __result = false;
                 return;
             }
+
             if (__instance.def?.defName == "AnimalFlap" && p.RaceProps?.Animal == true)
             {
                 __result = false;
                 return;
             }
-            if (__result) return;
-            if (p == null || __instance == null) return;
-            if (__instance is Building_Door door)
-            {
-                if (!door.Open)
-                {
-                    __result = true;
-                    return;
-                }
 
+            if (__result)
+                return;
+
+            if (__instance is Building_Door door && !door.Open)
+            {
+                __result = true;
+                return;
             }
 
             CompExhibitMarker comp = __instance.TryGetComp<CompExhibitMarker>();
@@ -175,13 +205,13 @@ namespace RimZoo
     {
         static void Postfix(Building_Door __instance, Pawn p, ref bool __result)
         {
-            if (p == null || __instance == null)
+            if (p == null || __instance == null || !Utilities.IsZooAnimal(p))
             {
                 return;
             }
             if (__instance.def?.defName == "AnimalFlap" && p.RaceProps?.Animal == true)
             {
-                __result = true; // Allow animals to open animal flaps
+                __result = true;
                 return;
             }
             if (p?.CurJob != null && p.CurJob.def.defName.ToLowerInvariant().Contains("rope"))
@@ -212,8 +242,6 @@ namespace RimZoo
         {
             var currentPen = AnimalPenUtility.GetCurrentPenOf(pawn, allowUnenclosedPens: false);
 
-            // Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn: {pawn.LabelShort}, Pen: {(currentPen?.label ?? "null")}, Type: {(currentPen?.GetType().Name ?? "null")}");
-
             Text.Anchor = TextAnchor.MiddleCenter;
             Text.Font = GameFont.Tiny;
 
@@ -224,33 +252,40 @@ namespace RimZoo
             {
                 if (currentPen is CompExhibitMarker)
                 {
-                    //Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is in an Exhibit.");
                     label = "In Exhibit: " + currentPen.label;
                     tooltip = label;
                 }
                 else
                 {
-                    // Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is in a regular Pen.");
                     label = "In Pen: " + currentPen.label;
                     tooltip = label;
                 }
             }
-            else if (AnimalPenUtility.NeedsToBeManagedByRope(pawn))
+            else
             {
-                // Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} needs to be roped.");
-                label = "Needs to be roped to a pen";
-                tooltip = label;
-            }
-            else if (pawn.RaceProps.Dryad)
-            {
-                //Log.Warning($"[ZooMod][DoAllowedAreaMessage] Pawn {pawn.LabelShort} is a Dryad.");
-                label = "Cannot assign allowed area to dryad";
-                tooltip = label;
+                if (pawn.RaceProps != null && pawn.RaceProps.FenceBlocked && Utilities.IsZooAnimal(pawn))
+                {
+                    label = "Needs to be roped to a pen";
+                    tooltip = label;
+                }
+                else if (pawn.RaceProps.Dryad)
+                {
+                    label = "Cannot assign allowed area to dryad";
+                    tooltip = label;
+                }
+                else
+                {
+                    label = "";
+                    tooltip = "";
+                }
             }
 
             GUI.color = Color.gray;
-            Widgets.Label(rect, label);
-            TooltipHandler.TipRegion(rect, tooltip);
+            if (!string.IsNullOrEmpty(label))
+            {
+                Widgets.Label(rect, label);
+                TooltipHandler.TipRegion(rect, tooltip);
+            }
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
@@ -259,12 +294,16 @@ namespace RimZoo
         }
     }
 
+
     [HarmonyPatch(typeof(AnimalPenUtility), nameof(AnimalPenUtility.GetCurrentPenOf))]
     public static class Patch_AnimalPenUtility_GetCurrentPenOf
     {
         static void Postfix(Pawn animal, bool allowUnenclosedPens, ref CompAnimalPenMarker __result)
         {
-            if (__result != null) return;
+            if (__result != null)
+                return;
+
+            bool isZooAnimal = animal.GetComp<PawnComp_IsZooPawn>()?.isZooPawn == true;
 
             foreach (Map map in Find.Maps)
             {
@@ -272,8 +311,14 @@ namespace RimZoo
 
                 foreach (Thing thing in map.listerThings.AllThings)
                 {
+                    if (!animal.RaceProps.FenceBlocked && !isZooAnimal)
+                        continue;
                     if (thing.TryGetComp<CompExhibitMarker>() is CompExhibitMarker exhibit)
                     {
+
+                        if (!isZooAnimal)
+                            continue;
+
                         if (exhibit.selectedAnimal != animal.def)
                             continue;
 
@@ -286,14 +331,32 @@ namespace RimZoo
                             __result = exhibit;
                             return;
                         }
+
+                    }
+                    else if (thing.TryGetComp<CompAnimalPenMarker>() is CompAnimalPenMarker pen)
+                    {
+
+                        if (pen is CompExhibitMarker)
+                            continue;
+
+
+                        if (isZooAnimal)
+                            continue;
+
+                        if (!pen.AcceptsToPen(animal))
+                            continue;
+
+                        if (pen.parent.OccupiedRect().Contains(animal.Position))
+                        {
+                            __result = pen;
+                            return;
+                        }
                     }
                 }
             }
         }
+
     }
-
-
-
 
 
     [HarmonyPatch(typeof(PawnColumnWorker_AllowedArea), "DoCell")]
@@ -355,4 +418,43 @@ namespace RimZoo
             return false;
         }
     }
+    [HarmonyPatch(typeof(Pawn), "GetGizmos")]
+    public static class Pawn_GetGizmos_Patch
+    {
+        static void Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
+        {
+            if (__instance.RaceProps.Animal)
+            {
+                var comp = __instance.GetComp<PawnComp_IsZooPawn>();
+                if (comp == null) return;
+
+                var gizmos = __result == null ? new List<Gizmo>() : new List<Gizmo>(__result);
+
+                var toggleGizmo = new Command_Toggle
+                {
+                    isActive = () => comp.isZooPawn,
+                    toggleAction = () => comp.isZooPawn = !comp.isZooPawn,
+                    defaultLabel = "Is Zoo Pawn",
+                    defaultDesc = "Toggle whether this animal is a zoo pawn.",
+                    icon = RimZoo_Textures.PawnToggleIcon,
+                };
+
+                gizmos.Add(toggleGizmo);
+
+                __result = gizmos;
+            }
+        }
+    }
+    [HarmonyPatch(typeof(Pawn), "SpawnSetup")]
+    public static class Pawn_SpawnSetup_Patch
+    {
+        static void Postfix(Pawn __instance)
+        {
+            if (__instance.RaceProps.Animal && __instance.GetComp<PawnComp_IsZooPawn>() == null)
+            {
+                __instance.AllComps.Add(new PawnComp_IsZooPawn { parent = __instance });
+            }
+        }
+    }
+  
 }

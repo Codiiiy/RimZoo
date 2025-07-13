@@ -38,7 +38,21 @@ namespace RimZoo
                 Pawn guest = PawnGenerator.GeneratePawn(new PawnGenerationRequest(PawnKindDefOf.Drifter, guestFaction));
                 guests.Add(guest);
 
-                IntVec3 spawnLoc = CellFinder.RandomClosewalkCellNear(CellFinder.RandomEdgeCell(map), map, 5);
+                IntVec3 spawnLoc = CellFinder.RandomEdgeCell(map);
+                if (!spawnLoc.Walkable(map) || spawnLoc.GetTerrain(map).IsWater)
+                {
+                    spawnLoc = CellFinder.RandomEdgeCell(map);
+                }
+
+                spawnLoc = CellFinder.RandomClosewalkCellNear(spawnLoc, map, 5);
+
+                int tries = 0;
+                while ((!spawnLoc.Walkable(map) || spawnLoc.GetTerrain(map).IsWater) && tries < 10)
+                {
+                    spawnLoc = CellFinder.RandomClosewalkCellNear(CellFinder.RandomEdgeCell(map), map, 5);
+                    tries++;
+                }
+
                 GenSpawn.Spawn(guest, spawnLoc, map);
             }
 

@@ -15,6 +15,44 @@ namespace RimZoo
         private bool highlightEnabled = false;
         public List<PenAnimalInfo> ExhibitAnimalsInfos => CachedFoodCalculator != null ? CachedFoodCalculator.ActualAnimalInfos : new List<PenAnimalInfo>();
         public ThingDef selectedAnimal;
+        public override void PostSpawnSetup(bool respawningAfterLoad)
+        {
+            base.PostSpawnSetup(respawningAfterLoad);
+            if (selectedAnimal == null)
+                selectedAnimal = ThingDefOf.Thrumbo;
+            ForceDisplayedAnimalDefs.Clear();
+            AnimalFilter.SetDisallowAll();
+            ForceDisplayedAnimalDefs.Add(selectedAnimal);
+            AnimalFilter.SetAllow(selectedAnimal, true);
+            base.PostSpawnSetup(respawningAfterLoad);
+
+
+        }
+        public override string CompInspectStringExtra()
+        {
+            StringBuilder sb = new StringBuilder(base.CompInspectStringExtra());
+            sb.AppendLine();
+            sb.Append("Selected Animal: ");
+            sb.Append(selectedAnimal != null ? selectedAnimal.label : "None");
+            sb.AppendLine();
+            sb.Append("Rarity: ");
+            sb.Append(Rarity.ToString("F2"));
+            sb.AppendLine();
+            sb.Append("Happiness: ");
+            sb.Append(Happiness.ToString("F2"));
+            sb.AppendLine();
+            sb.Append("Pawn Count: ");
+            sb.Append(AssignedPawnCount);
+            sb.AppendLine();
+            sb.AppendLine("Happiness Breakdown:");
+            sb.Append(GetHappinessBreakdown());
+            return sb.ToString().Trim();
+        }
+        public override void PostExposeData()
+        {
+            base.PostExposeData();
+            Scribe_Defs.Look(ref selectedAnimal, "selectedAnimal");
+        }
         private PenFoodCalculator CachedFoodCalculator
         {
             get
@@ -139,45 +177,6 @@ namespace RimZoo
             if (CachedFoodCalculator.numCellsSoil < 400)
                 return 0.75f;
             return 1.0f;
-        }
-
-        public override void PostSpawnSetup(bool respawningAfterLoad)
-        {
-            base.PostSpawnSetup(respawningAfterLoad);
-            if (selectedAnimal == null)
-                selectedAnimal = ThingDefOf.Thrumbo;
-            ForceDisplayedAnimalDefs.Clear();
-            AnimalFilter.SetDisallowAll();
-            ForceDisplayedAnimalDefs.Add(selectedAnimal);
-            AnimalFilter.SetAllow(selectedAnimal, true);
-            base.PostSpawnSetup(respawningAfterLoad);
-
-
-        }
-        public override string CompInspectStringExtra()
-        {
-            StringBuilder sb = new StringBuilder(base.CompInspectStringExtra());
-            sb.AppendLine();
-            sb.Append("Selected Animal: ");
-            sb.Append(selectedAnimal != null ? selectedAnimal.label : "None");
-            sb.AppendLine();
-            sb.Append("Rarity: ");
-            sb.Append(Rarity.ToString("F2"));
-            sb.AppendLine();
-            sb.Append("Happiness: ");
-            sb.Append(Happiness.ToString("F2"));
-            sb.AppendLine();
-            sb.Append("Pawn Count: ");
-            sb.Append(AssignedPawnCount);
-            sb.AppendLine();
-            sb.AppendLine("Happiness Breakdown:");
-            sb.Append(GetHappinessBreakdown());
-            return sb.ToString().Trim();
-        }
-        public override void PostExposeData()
-        {
-            base.PostExposeData();
-            Scribe_Defs.Look(ref selectedAnimal, "selectedAnimal");
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()

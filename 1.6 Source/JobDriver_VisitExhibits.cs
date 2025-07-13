@@ -11,7 +11,6 @@ namespace RimZoo
 
         protected override IEnumerable<Toil> MakeNewToils()
         {
-            Log.Warning("Toil fired");
             if (job.targetQueueA == null || job.targetQueueA.Count == 0)
                 yield break;
 
@@ -28,7 +27,13 @@ namespace RimZoo
             Toil dropSilver = Toils_General.Do(() =>
             {
                 Thing silver = ThingMaker.MakeThing(ThingDefOf.Silver);
+
                 silver.stackCount = RimZoo_Logic.GetPrice();
+                if (silver.stackCount <= 0)
+                {
+                    Log.Warning("Price is less than or equal zero");
+                    silver.stackCount = 1;
+                }
                 GenPlace.TryPlaceThing(silver, pawn.Position, pawn.Map, ThingPlaceMode.Near);
             });
             yield return dropSilver;

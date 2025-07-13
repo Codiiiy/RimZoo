@@ -1,0 +1,8 @@
+<Patch>
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[@Name="AnimalThingBase"]/comps</xpath>
+    <value>
+      <li Class="RimZoo.CompProperties_IsZooPawn" />
+    </value>
+  </Operation>
+</Patch>

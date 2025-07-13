@@ -23,7 +23,8 @@ namespace RimZoo
             Map map = (Map)parms.target;
             int groupSize = Rand.RangeInclusive(1, 7);
             List<Pawn> guests = new List<Pawn>();
-            IntVec3 spawnCell = CellFinder.RandomEdgeCell(map);
+
+
             var exhibits = RimZoo_Logic.FindAllPens();
 
             List<Faction> validFactions = Find.FactionManager.AllFactions
@@ -34,21 +35,33 @@ namespace RimZoo
 
             for (int i = 0; i < groupSize; i++)
             {
-                Pawn guest = PawnGenerator.GeneratePawn(PawnKindDefOf.Villager, guestFaction);
+                Pawn guest = PawnGenerator.GeneratePawn(new PawnGenerationRequest(PawnKindDefOf.Drifter, guestFaction));
                 guests.Add(guest);
-                GenSpawn.Spawn(guest, spawnCell, map);
+
+                IntVec3 spawnLoc = CellFinder.RandomClosewalkCellNear(CellFinder.RandomEdgeCell(map), map, 5);
+                GenSpawn.Spawn(guest, spawnLoc, map);
+            }
+
+            foreach (Pawn guest in guests)
+            {
+                if (!guest.Spawned)
+                {
+                    Log.Warning($"Guest {guest} failed to spawn!");
+                    continue;
+                }
             }
 
             if (exhibits != null && exhibits.Count > 0)
             {
                 foreach (Pawn guest in guests)
                 {
+                    if (!guest.Spawned) continue;
+
                     Job visitJob = JobMaker.MakeJob(RimZoo_JobDefOf.VisitExhibitMarker);
 
                     List<LocalTargetInfo> validTargets = new List<LocalTargetInfo>();
                     foreach (var exhibit in exhibits)
                     {
-
                         IntVec3 visitSpot = FindVisitSpot(exhibit);
                         validTargets.Add(new LocalTargetInfo(visitSpot));
                     }
@@ -57,13 +70,14 @@ namespace RimZoo
                     guest.jobs.StartJob(visitJob, JobCondition.None, null, false, true);
                 }
             }
-
             string letterText = $"A group of {groupSize} guests has arrived at your zoo. They are now exploring the exhibits.";
             Find.LetterStack.ReceiveLetter("Zoo Guests Arrive", letterText, LetterDefOf.PositiveEvent);
             return true;
         }
+
         private IntVec3 FindVisitSpot(CompExhibitMarker exhibit)
         {
+
             List<IntVec3> validSpots = exhibit.CalculateValidFenceSpots().ToList();
 
 
