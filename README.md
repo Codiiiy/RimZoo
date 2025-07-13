@@ -1,4 +1,5 @@
 🦓 RimZoo – Build Your Own Zoo in RimWorld! (WIP)
+Steam link: https://steamcommunity.com/sharedfiles/filedetails/?id=3519610059
 
 Welcome to RimZoo!
 Create, manage, and profit from your very own zoo—RimWorld style!
