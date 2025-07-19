@@ -6,15 +6,19 @@ using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Noise;
 
 namespace RimZoo
 {
+
 
     [HarmonyPatch(typeof(AnimalPenUtility), "IsRopeManagedAnimalDef")]
     public static class Patch_IsRopeManagedAnimalDef
     {
         static bool Prefix(ThingDef td, ref bool __result)
         {
+            if (td == null || td.race == null)
+                return true;
             if (td.race != null && td.race.Animal && td.thingCategories.Contains(ThingCategoryDefOf.Animals))
             {
                 __result = true;
@@ -100,7 +104,7 @@ namespace RimZoo
         static void Postfix(CompAnimalPenMarker __instance, bool respawningAfterLoad)
         {
             if (__instance.AnimalFilter == null) return;
-            if (respawningAfterLoad) return; 
+            if (respawningAfterLoad) return;
 
             var allowedDefs = DefDatabase<ThingDef>.AllDefsListForReading
                 .Where(def =>
@@ -118,6 +122,7 @@ namespace RimZoo
             }
         }
     }
+
     [HarmonyPatch(typeof(AnimalPenUtility), nameof(AnimalPenUtility.NeedsToBeManagedByRope))]
     public static class Patch_AnimalPenUtility_NeedsToBeManagedByRope
     {
@@ -134,9 +139,38 @@ namespace RimZoo
                 return false;
             }
 
+            if (pawn.Map != null)
+            {
+                var exhibitMarkers = Utilities.GetAllExhibitMarkers(pawn.Map);
+                foreach (var exhibit in exhibitMarkers)
+                {
+
+                    var penCells = exhibit.GetAutoCutCells();
+                    if (penCells != null && penCells.Contains(pawn.Position))
+                    {
+                        __result = false;
+                        return false;
+                    }
+                }
+                foreach (var thing in pawn.Map.listerBuildings.allBuildingsAnimalPenMarkers)
+                {
+                    if (thing.TryGetComp<CompAnimalPenMarker>() is CompAnimalPenMarker pen)
+                    {
+                        var penCells = pen.GetAutoCutCells();
+                        if (penCells != null && penCells.Contains(pawn.Position))
+                        {
+                            __result = false;
+                            return false;
+                        }
+                    }
+                }
+            }
+
             return true;
         }
     }
+
+
 
 
     [HarmonyPatch(typeof(Thing), "BlocksPawn")]
@@ -165,36 +199,23 @@ namespace RimZoo
                 return;
             }
 
-            if (__result)
-                return;
-
             if (__instance is Building_Door door && !door.Open)
             {
                 __result = true;
                 return;
             }
 
-            CompExhibitMarker comp = __instance.TryGetComp<CompExhibitMarker>();
-            if (comp != null && comp.selectedAnimal == p.def)
+            if (__instance.def?.defName == "Fence" || __instance.def?.defName == "FenceGate")
             {
                 __result = true;
                 return;
             }
 
-            Map map = __instance.Map;
-            if (map != null)
+            var comp = __instance.TryGetComp<CompExhibitMarker>();
+            if (comp != null && comp.selectedAnimal == p.def)
             {
-                foreach (Building building in map.listerBuildings.allBuildingsColonist)
-                {
-                    if (!building.Spawned) continue;
-
-                    var compExhibit = building.TryGetComp<CompExhibitMarker>();
-                    if (compExhibit != null && compExhibit.selectedAnimal == p.def)
-                    {
-                        __result = true;
-                        return;
-                    }
-                }
+                __result = true;
+                return;
             }
         }
     }
@@ -300,40 +321,41 @@ namespace RimZoo
     {
         static void Postfix(Pawn animal, bool allowUnenclosedPens, ref CompAnimalPenMarker __result)
         {
+            //  Log.Message($"[Zoo Debug] {animal.Name} pen result: {__result?.label ?? "null"}, pos: {animal.Position}");
             if (__result != null)
                 return;
 
             bool isZooAnimal = animal.GetComp<PawnComp_IsZooPawn>()?.isZooPawn == true;
 
-            foreach (Map map in Find.Maps)
+
+            Map map = animal.Map;
+            var exhibitMarkers = Utilities.GetAllExhibitMarkers(map);
+            foreach (var exhibit in exhibitMarkers)
             {
-                if (animal.Map != map) continue;
+                if (!animal.RaceProps.FenceBlocked && !isZooAnimal)
+                    continue;
 
-                foreach (Thing thing in map.listerThings.AllThings)
+                if (!isZooAnimal)
+                    continue;
+
+                if (exhibit.selectedAnimal != animal.def)
+                    continue;
+
+                var penCells = exhibit.GetAutoCutCells();
+                //Log.Message($"[Zoo Debug] {animal.LabelShort} pos: {animal.Position}, pen: {exhibit?.parent?.LabelCap ?? "null"}, cell count: {penCells?.Count() ?? 0}, containsPos: {penCells?.Contains(animal.Position) ?? false}");
+                //Log.Message($"[Zoo Debug] Pen has {penCells.Count()} cells, animal at {animal.Position}, inside: {penCells.Contains(animal.Position)}");
+
+                if (penCells == null)
+                    continue;
+
+                if (penCells.Contains(animal.Position))
                 {
-                    if (!animal.RaceProps.FenceBlocked && !isZooAnimal)
-                        continue;
-                    if (thing.TryGetComp<CompExhibitMarker>() is CompExhibitMarker exhibit)
-                    {
-
-                        if (!isZooAnimal)
-                            continue;
-
-                        if (exhibit.selectedAnimal != animal.def)
-                            continue;
-
-                        var penCells = exhibit.GetAutoCutCells();
-                        if (penCells == null)
-                            continue;
-
-                        if (penCells.Contains(animal.Position))
-                        {
-                            __result = exhibit;
-                            return;
-                        }
-
-                    }
-                    else if (thing.TryGetComp<CompAnimalPenMarker>() is CompAnimalPenMarker pen)
+                    __result = exhibit;
+                    return;
+                }
+                foreach (var thing in map.listerBuildings.allBuildingsAnimalPenMarkers)
+                {
+                    if (thing.TryGetComp<CompAnimalPenMarker>() is CompAnimalPenMarker pen)
                     {
 
                         if (pen is CompExhibitMarker)
@@ -355,8 +377,10 @@ namespace RimZoo
                 }
             }
         }
-
     }
+
+
+
 
 
     [HarmonyPatch(typeof(PawnColumnWorker_AllowedArea), "DoCell")]
@@ -423,7 +447,7 @@ namespace RimZoo
     {
         static void Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
         {
-            if (__instance.RaceProps.Animal)
+            if (__instance.RaceProps.Animal && __instance.Faction == Faction.OfPlayer)
             {
                 var comp = __instance.GetComp<PawnComp_IsZooPawn>();
                 if (comp == null) return;
@@ -445,6 +469,7 @@ namespace RimZoo
             }
         }
     }
+
     [HarmonyPatch(typeof(Pawn), "SpawnSetup")]
     public static class Pawn_SpawnSetup_Patch
     {
@@ -456,5 +481,5 @@ namespace RimZoo
             }
         }
     }
-  
+
 }

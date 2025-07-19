@@ -13,6 +13,7 @@ namespace RimZoo
         {
             settings = GetSettings<RimZooMainSettings>();
             var harmony = new Harmony("com.rimzoo.exhibitharmonypatch");
+            //Harmony.DEBUG = true;
             harmony.PatchAll();
         }
 
